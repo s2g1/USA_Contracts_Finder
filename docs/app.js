@@ -1,4 +1,6 @@
-// GovContractFinder - Client Application Logic
+ // GovContractFinder - Client Application Logic
+
+const BASE_URL = 'https://consoling-king-confining.ngrok-free.dev';
 
 let state = {
   opportunities: [],
@@ -49,7 +51,7 @@ async function fetchOpportunities() {
     if (state.setAsideFilter !== 'ALL') params.append('set_aside', state.setAsideFilter);
     if (state.minScoreFilter > 0) params.append('min_score', state.minScoreFilter);
 
-    const res = await fetch(`/api/opportunities?${params.toString()}`);
+    const res = await fetch(`${BASE_URL}/api/opportunities?${params.toString()}`);
     const data = await res.json();
     state.opportunities = data.results || [];
 
@@ -321,7 +323,7 @@ async function toggleFavorite(noticeId, event) {
   fetchStats();
 
   try {
-    await fetch(`/api/opportunities/${noticeId}/interaction`, {
+    await fetch(`${BASE_URL}/api/opportunities/${noticeId}/interaction`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ is_favorite: newFavStatus })
