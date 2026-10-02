@@ -1,5 +1,7 @@
 // GovContractFinder - Client Application Logic
 
+const API_BASE_URL = 'https://consoling-king-confining.ngrok-free.dev';
+
 let state = {
   opportunities: [],
   activeTier: 'ALL',
@@ -49,7 +51,7 @@ async function fetchOpportunities() {
     if (state.setAsideFilter !== 'ALL') params.append('set_aside', state.setAsideFilter);
     if (state.minScoreFilter > 0) params.append('min_score', state.minScoreFilter);
 
-    const res = await fetch(`/api/opportunities?${params.toString()}`);
+    const res = await fetch(`${API_BASE_URL}/api/opportunities?${params.toString()}`);
     const data = await res.json();
     state.opportunities = data.results || [];
 
@@ -215,7 +217,7 @@ function createOpportunityCardHtml(opp) {
 
 async function fetchStats() {
   try {
-    const res = await fetch('/api/stats');
+    const res = await fetch(API_BASE_URL + '/api/stats');
     const stats = await res.json();
     document.getElementById('statTotal').innerText = stats.total_solicitations || 0;
     document.getElementById('statHigh').innerText = stats.high_match_count || 0;
@@ -230,7 +232,7 @@ async function fetchStats() {
 
 async function fetchScheduleInfo() {
   try {
-    const res = await fetch('/api/schedule');
+    const res = await fetch(API_BASE_URL + '/api/schedule');
     const data = await res.json();
     if (data.seconds_until_next_run !== undefined && data.seconds_until_next_run !== null) {
       state.secondsUntilNextRun = data.seconds_until_next_run;
@@ -283,7 +285,7 @@ async function triggerManualSync() {
   showToast('Connecting to SAM.gov and calculating scorecards...', 'info');
 
   try {
-    const res = await fetch('/api/sync', { method: 'POST' });
+    const res = await fetch(API_BASE_URL + '/api/sync', { method: 'POST' });
     const result = await res.json();
 
     if (result.status === 'SUCCESS') {
@@ -362,7 +364,7 @@ async function openScorecardModal(noticeId) {
   let opp = state.opportunities.find(o => o.notice_id === noticeId);
   if (!opp) {
     try {
-      const res = await fetch(`/api/opportunities/${noticeId}`);
+      const res = await fetch(`${API_BASE_URL}/api/opportunities/${noticeId}`);
       opp = await res.json();
     } catch (e) {
       showToast('Could not load solicitation detail', 'error');
@@ -505,7 +507,7 @@ async function openSkillsModal() {
   errorElem.classList.add('hidden');
 
   try {
-    const res = await fetch('/api/skills');
+    const res = await fetch(`${API_BASE_URL}/api/skills`);
     const config = await res.json();
     editor.value = JSON.stringify(config, null, 2);
     modal.showModal();
@@ -539,7 +541,7 @@ async function saveSkillsConfig() {
   btn.innerText = 'Recalculating...';
 
   try {
-    const res = await fetch('/api/skills?recalculate=true', {
+    const res = await fetch(`${API_BASE_URL}/api/skills?recalculate=true`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(parsedConfig)
@@ -611,7 +613,7 @@ async function resetSkillsToDefault() {
 
 async function checkSettingsStatus() {
   try {
-    const res = await fetch('/api/settings/status');
+    const res = await fetch(`${API_BASE_URL}/api/settings/status`);
     const data = await res.json();
     const banner = document.getElementById('apiKeyStatusBanner');
     const title = document.getElementById('apiKeyStatusTitle');
@@ -650,7 +652,7 @@ async function saveApiKey() {
   btn.innerText = 'Saving...';
 
   try {
-    const res = await fetch('/api/settings/apikey', {
+    const res = await fetch(`${API_BASE_URL}/api/settings/apikey`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ api_key: key })
