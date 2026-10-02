@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#1e293b">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>GovContractFinder | Government Contract Radar</title>
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#eff6ff',
+              100: '#dbeafe',
+              500: '#3b82f6',
+              600: '#2563eb',
+              700: '#1d4ed8',
+              800: '#1e40af',
+              900: '#1e3a8a',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body class="bg-slate-50 text-slate-900 font-sans min-h-screen flex flex-col antialiased selection:bg-blue-100 selection:text-blue-900 pb-20 md:pb-6">
+
+  <!-- TOP HEADER -->
+  <header class="sticky top-0 z-30 bg-slate-900 text-white shadow-md border-b border-slate-800 safe-top">
+    <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+      
+      <!-- Logo & Title -->
+      <div class="flex items-center space-x-3">
+        <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center shadow-lg shadow-blue-500/30">
+          <i data-lucide="crosshair" class="w-5 h-5 text-white"></i>
+        </div>
+        <div>
+          <div class="flex items-center space-x-1.5">
+            <h1 class="font-bold text-base md:text-lg tracking-tight">GovContract<span class="text-blue-400">Finder</span></h1>
+            <span class="px-1.5 py-0.5 text-[10px] uppercase font-semibold tracking-wider bg-blue-500/20 text-blue-300 rounded border border-blue-400/30">SAM.gov</span>
+          </div>
+          <p class="text-xs text-slate-400 hidden sm:block">Automated Scorecards & Executable Work Intelligence</p>
+        </div>
+      </div>
+
+      <!-- Live Schedule & Actions -->
+      <div class="flex items-center space-x-2">
+        <!-- Schedule Countdown Chip -->
+        <div id="scheduleBadge" class="hidden sm:flex items-center space-x-2 bg-slate-800/80 px-2.5 py-1.5 rounded-lg border border-slate-700 text-xs">
+          <span class="relative flex h-2 w-2">
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+            <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+          </span>
+          <span class="text-slate-300 font-medium">Daily at 5:00 PM EST</span>
+          <span id="countdownTimer" class="text-slate-400 text-[11px] font-mono border-l border-slate-700 pl-2">--:--:--</span>
+        </div>
+
+        <!-- Sync Button -->
+        <button id="btnSyncNow" onclick="triggerManualSync()" title="Trigger Query & Scorecards Now"
+          class="flex items-center space-x-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-500 active:scale-95 text-white text-xs font-semibold rounded-lg shadow-sm transition">
+          <i data-lucide="refresh-cw" id="syncIcon" class="w-3.5 h-3.5"></i>
+          <span>Sync Now</span>
+        </button>
+
+        <!-- Skills Config Button -->
+        <button onclick="openSkillsModal()" title="Skill Sets File Configuration"
+          class="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-lg border border-slate-700 active:scale-95 transition">
+          <i data-lucide="sliders" class="w-4 h-4"></i>
+        </button>
+
+        <!-- Settings Button -->
+        <button onclick="openSettingsModal()" title="API Key & Settings"
+          class="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-lg border border-slate-700 active:scale-95 transition">
+          <i data-lucide="settings" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+    </div>
+
+    <!-- Mobile Subheader Banner for Schedule Info -->
+    <div class="sm:hidden px-4 py-1.5 bg-slate-950/60 border-t border-slate-800/60 flex items-center justify-between text-[11px] text-slate-400">
+      <div class="flex items-center space-x-1.5">
+        <span class="h-1.5 w-1.5 rounded-full bg-emerald-400"></span>
+        <span>Daily Query: 5:00 PM EST</span>
+      </div>
+      <div class="flex items-center space-x-1 font-mono text-slate-300">
+        <span>Next:</span>
+        <span id="countdownTimerMobile">--:--:--</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN CONTAINER -->
+  <main class="max-w-6xl mx-auto w-full px-4 pt-4 flex-1">
+
+    <!-- KPI STATS CARDS -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-2.5 md:gap-4 mb-4">
+      <div class="bg-white p-3 md:p-4 rounded-xl border border-slate-200/80 shadow-sm flex items-center justify-between">
+        <div>
+          <p class="text-xs font-medium text-slate-500 uppercase tracking-wide">Total Solicitations</p>
+          <p id="statTotal" class="text-xl md:text-2xl font-bold text-slate-800 mt-0.5">0</p>
+        </div>
+        <div class="w-10 h-10 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
+          <i data-lucide="layers" class="w-5 h-5"></i>
+        </div>
+      </div>
+
+      <div class="bg-white p-3 md:p-4 rounded-xl border border-slate-200/80 shadow-sm flex items-center justify-between cursor-pointer hover:border-emerald-300 transition" onclick="setFilterTier('HIGH')">
+        <div>
+          <p class="text-xs font-medium text-emerald-600 uppercase tracking-wide">High Match (70%+)</p>
+          <p id="statHigh" class="text-xl md:text-2xl font-bold text-emerald-600 mt-0.5">0</p>
+        </div>
+        <div class="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
+          <i data-lucide="sparkles" class="w-5 h-5"></i>
+        </div>
+      </div>
+
+      <div class="bg-white p-3 md:p-4 rounded-xl border border-slate-200/80 shadow-sm flex items-center justify-between cursor-pointer hover:border-amber-300 transition" onclick="setFilterTier('MODERATE')">
+        <div>
+          <p class="text-xs font-medium text-amber-600 uppercase tracking-wide">Moderate (40-69%)</p>
+          <p id="statModerate" class="text-xl md:text-2xl font-bold text-amber-600 mt-0.5">0</p>
+        </div>
+        <div class="w-10 h-10 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center">
+          <i data-lucide="scale" class="w-5 h-5"></i>
+        </div>
+      </div>
+
+      <div class="bg-white p-3 md:p-4 rounded-xl border border-slate-200/80 shadow-sm flex items-center justify-between cursor-pointer hover:border-blue-300 transition" onclick="toggleFavoritesOnly()">
+        <div>
+          <p class="text-xs font-medium text-slate-500 uppercase tracking-wide">Bookmarked</p>
+          <p id="statFavorites" class="text-xl md:text-2xl font-bold text-slate-800 mt-0.5">0</p>
+        </div>
+        <div class="w-10 h-10 rounded-lg bg-yellow-50 text-yellow-500 flex items-center justify-center">
+          <i data-lucide="bookmark" class="w-5 h-5"></i>
+        </div>
+      </div>
+    </div>
+
+    <!-- SEARCH & FILTER TOOLBAR -->
+    <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm mb-4 space-y-3">
+      
+      <!-- Search Input -->
+      <div class="relative flex items-center">
+        <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3"></i>
+        <input type="text" id="searchInput" placeholder="Search solicitations, agency, keywords, NAICS, or notice ID..."
+          oninput="debounceSearch()"
+          class="w-full pl-9 pr-10 py-2.5 bg-slate-50 text-slate-800 placeholder-slate-400 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition">
+        <button id="searchClearBtn" onclick="clearSearch()" class="hidden absolute right-3 text-slate-400 hover:text-slate-600 p-1">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <!-- Quick Filter Pills (Horizontal swipe on mobile) -->
+      <div class="flex items-center justify-between overflow-x-auto no-scrollbar pt-1 space-x-2">
+        <div class="flex items-center space-x-2 min-w-max">
+          <button onclick="setFilterTier('ALL')" id="filterBtnAll"
+            class="filter-pill active px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 text-white shadow-sm transition">
+            All Solicitations
+          </button>
+          <button onclick="setFilterTier('HIGH')" id="filterBtnHigh"
+            class="filter-pill px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 text-slate-600 hover:bg-emerald-50 hover:text-emerald-700 transition flex items-center space-x-1">
+            <span>🔥 High Match</span>
+            <span class="text-[10px] opacity-75 font-normal">(&ge;70%)</span>
+          </button>
+          <button onclick="setFilterTier('MODERATE')" id="filterBtnModerate"
+            class="filter-pill px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 text-slate-600 hover:bg-amber-50 hover:text-amber-700 transition flex items-center space-x-1">
+            <span>⚖️ Moderate</span>
+          </button>
+          <button onclick="setFilterTier('LOW')" id="filterBtnLow"
+            class="filter-pill px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200 transition">
+            Low Match
+          </button>
+          <button onclick="toggleFavoritesOnly()" id="filterBtnFavs"
+            class="filter-pill px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 text-slate-600 hover:bg-yellow-50 hover:text-yellow-700 transition flex items-center space-x-1">
+            <i data-lucide="star" class="w-3.5 h-3.5 text-yellow-500"></i>
+            <span>Favorites</span>
+          </button>
+        </div>
+
+        <!-- Filter Drawer / More Filters Toggle -->
+        <button onclick="toggleFilterDrawer()" class="flex items-center space-x-1 px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-lg border border-slate-200 ml-auto min-w-max">
+          <i data-lucide="sliders-horizontal" class="w-3.5 h-3.5"></i>
+          <span>Filters</span>
+        </button>
+      </div>
+
+      <!-- Advanced Filter Drawer -->
+      <div id="filterDrawer" class="hidden pt-3 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+        <div>
+          <label class="block font-medium text-slate-700 mb-1">Set-Aside Category</label>
+          <select id="filterSetAside" onchange="applyFilters()" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-700">
+            <option value="ALL">All Set-Asides</option>
+            <option value="Small Business">Small Business Set-Aside</option>
+            <option value="SDVOSB">SDVOSB (Service-Disabled Veteran)</option>
+            <option value="8(a)">8(a) Sole Source / Set-Aside</option>
+            <option value="HUBZone">HUBZone</option>
+            <option value="Unrestricted">Unrestricted</option>
+          </select>
+        </div>
+        <div>
+          <label class="block font-medium text-slate-700 mb-1">Minimum Score: <span id="minScoreLabel" class="font-bold text-blue-600">0%</span></label>
+          <input type="range" id="filterMinScore" min="0" max="100" value="0" step="5" oninput="updateMinScoreLabel(this.value)" onchange="applyFilters()"
+            class="w-full accent-blue-600">
+        </div>
+      </div>
+
+    </div>
+
+    <!-- SOLICITATIONS FEED -->
+    <div id="feedContainer" class="space-y-3.5">
+      <!-- Loading Skeleton -->
+      <div id="loadingIndicator" class="space-y-3">
+        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm animate-pulse space-y-3">
+          <div class="flex justify-between items-center">
+            <div class="h-4 bg-slate-200 rounded w-1/4"></div>
+            <div class="h-6 bg-slate-200 rounded w-16"></div>
+          </div>
+          <div class="h-5 bg-slate-200 rounded w-3/4"></div>
+          <div class="h-12 bg-slate-100 rounded w-full"></div>
+          <div class="flex gap-2">
+            <div class="h-5 bg-slate-200 rounded w-20"></div>
+            <div class="h-5 bg-slate-200 rounded w-24"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Opportunities List injected via JavaScript -->
+      <div id="opportunitiesList" class="space-y-3.5"></div>
+
+      <!-- Empty State -->
+      <div id="emptyState" class="hidden text-center py-12 px-4 bg-white rounded-xl border border-dashed border-slate-300">
+        <div class="w-12 h-12 rounded-full bg-blue-50 text-blue-500 mx-auto flex items-center justify-center mb-3">
+          <i data-lucide="search-x" class="w-6 h-6"></i>
+        </div>
+        <h3 class="text-base font-semibold text-slate-800">No solicitations match your filters</h3>
+        <p class="text-xs text-slate-500 max-w-sm mx-auto mt-1">Try lowering the minimum score threshold or clearing search keywords.</p>
+        <button onclick="resetAllFilters()" class="mt-4 px-4 py-2 bg-blue-600 text-white text-xs font-semibold rounded-lg hover:bg-blue-500 transition">
+          Reset All Filters
+        </button>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- MOBILE BOTTOM NAVIGATION BAR -->
+  <nav class="sm:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200 px-6 py-2 safe-bottom shadow-lg">
+    <div class="flex items-center justify-around">
+      <button onclick="setFilterTier('ALL')" id="navFeed" class="flex flex-col items-center space-y-0.5 text-blue-600">
+        <i data-lucide="compass" class="w-5 h-5"></i>
+        <span class="text-[10px] font-semibold">Feed</span>
+      </button>
+      <button onclick="setFilterTier('HIGH')" id="navHigh" class="flex flex-col items-center space-y-0.5 text-slate-500 hover:text-emerald-600">
+        <i data-lucide="sparkles" class="w-5 h-5"></i>
+        <span class="text-[10px] font-medium">Top Matches</span>
+      </button>
+      <button onclick="toggleFavoritesOnly()" id="navFavs" class="flex flex-col items-center space-y-0.5 text-slate-500 hover:text-yellow-600">
+        <i data-lucide="bookmark" class="w-5 h-5"></i>
+        <span class="text-[10px] font-medium">Saved</span>
+      </button>
+      <button onclick="openSkillsModal()" class="flex flex-col items-center space-y-0.5 text-slate-500 hover:text-blue-600">
+        <i data-lucide="cpu" class="w-5 h-5"></i>
+        <span class="text-[10px] font-medium">Skill Sets</span>
+      </button>
+      <button onclick="openSettingsModal()" class="flex flex-col items-center space-y-0.5 text-slate-500 hover:text-blue-600">
+        <i data-lucide="sliders" class="w-5 h-5"></i>
+        <span class="text-[10px] font-medium">Settings</span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- SCORECARD DEEP-DIVE MODAL / BOTTOM SHEET -->
+  <dialog id="scorecardModal" class="m-auto w-full max-w-2xl bg-white rounded-2xl shadow-2xl p-0 overflow-hidden border border-slate-200">
+    <div class="flex flex-col max-h-[90vh]">
+      
+      <!-- Modal Header -->
+      <div class="px-5 py-4 bg-slate-900 text-white flex items-center justify-between border-b border-slate-800">
+        <div class="flex items-center space-x-2">
+          <div class="p-1.5 rounded-lg bg-blue-600 text-white">
+            <i data-lucide="award" class="w-4 h-4"></i>
+          </div>
+          <div>
+            <h2 class="text-sm md:text-base font-bold tracking-tight">Contract Scorecard & Intelligence</h2>
+            <p id="modalNoticeId" class="text-xs text-slate-400 font-mono">Notice ID: --</p>
+          </div>
+        </div>
+        <button onclick="closeScorecardModal()" class="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Modal Body (Scrollable) -->
+      <div class="p-5 overflow-y-auto space-y-5 text-slate-800 text-sm">
+        
+        <!-- Score Banner -->
+        <div id="modalScoreBanner" class="p-4 rounded-xl border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div class="flex items-center space-x-3">
+            <div id="modalScoreCircle" class="w-14 h-14 rounded-full flex items-center justify-center font-black text-xl shadow-inner">
+              0%
+            </div>
+            <div>
+              <div id="modalTierBadge" class="inline-block px-2 py-0.5 text-xs font-bold rounded-md uppercase tracking-wider mb-1">
+                TIER
+              </div>
+              <p id="modalConfidenceTitle" class="font-bold text-slate-900 text-sm md:text-base">Likelihood of Executable Work</p>
+              <p id="modalConfidenceSub" class="text-xs text-slate-500">Evaluated against custom Skill Sets parameters</p>
+            </div>
+          </div>
+          <div class="flex items-center space-x-2 w-full sm:w-auto">
+            <a id="modalSamLinkBtn" href="#" target="_blank" rel="noopener noreferrer"
+              class="w-full sm:w-auto flex items-center justify-center space-x-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg shadow-sm transition">
+              <span>View on SAM.gov</span>
+              <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+            </a>
+          </div>
+        </div>
+
+        <!-- Title & Agency Info -->
+        <div>
+          <h3 id="modalTitle" class="text-base font-bold text-slate-900 leading-snug">Solicitation Title</h3>
+          <div class="flex flex-wrap items-center gap-2 mt-2 text-xs text-slate-600">
+            <span id="modalAgency" class="px-2 py-0.5 bg-slate-100 rounded text-slate-700 font-medium">Agency</span>
+            <span id="modalSetAside" class="px-2 py-0.5 bg-purple-50 text-purple-700 rounded font-medium border border-purple-200">Set-Aside</span>
+            <span id="modalDeadline" class="px-2 py-0.5 bg-rose-50 text-rose-700 rounded font-medium border border-rose-200">Deadline</span>
+          </div>
+        </div>
+
+        <!-- Executive Summary of Work -->
+        <div class="bg-blue-50/50 p-4 rounded-xl border border-blue-100">
+          <div class="flex items-center space-x-2 text-blue-900 font-bold text-xs uppercase tracking-wider mb-2">
+            <i data-lucide="file-text" class="w-4 h-4 text-blue-600"></i>
+            <span>Summary of Work to be Performed</span>
+          </div>
+          <p id="modalSummary" class="text-slate-700 leading-relaxed text-xs md:text-sm">
+            Summary text...
+          </p>
+        </div>
+
+        <!-- Capability Match Breakdown by Skill Set Categories -->
+        <div>
+          <h4 class="font-bold text-slate-900 text-xs uppercase tracking-wider mb-3 flex items-center space-x-1.5">
+            <i data-lucide="bar-chart-2" class="w-4 h-4 text-slate-500"></i>
+            <span>Skill Sets Category Match Breakdown</span>
+          </h4>
+          <div id="modalCategoryBreakdown" class="space-y-2.5">
+            <!-- Injected dynamically -->
+          </div>
+        </div>
+
+        <!-- Key Deliverables & Scope Markers -->
+        <div>
+          <h4 class="font-bold text-slate-900 text-xs uppercase tracking-wider mb-2 flex items-center space-x-1.5">
+            <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-600"></i>
+            <span>Identified Deliverables & Milestones</span>
+          </h4>
+          <ul id="modalDeliverablesList" class="space-y-1.5 text-xs text-slate-700 pl-1">
+            <!-- Injected dynamically -->
+          </ul>
+        </div>
+
+        <!-- Matched Capabilities & Keywords -->
+        <div>
+          <h4 class="font-bold text-slate-900 text-xs uppercase tracking-wider mb-2 flex items-center space-x-1.5">
+            <i data-lucide="tag" class="w-4 h-4 text-slate-500"></i>
+            <span>Matched Keywords & Tech Stack Terms</span>
+          </h4>
+          <div id="modalMatchedKeywords" class="flex flex-wrap gap-1.5">
+            <!-- Injected dynamically -->
+          </div>
+        </div>
+
+        <!-- Technical & Government Metadata -->
+        <div class="p-3.5 bg-slate-50 rounded-xl border border-slate-200 text-xs grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+          <div>
+            <span class="text-slate-500 block">NAICS Code:</span>
+            <span id="modalNaics" class="font-medium text-slate-800 font-mono">--</span>
+          </div>
+          <div>
+            <span class="text-slate-500 block">PSC / Classification Code:</span>
+            <span id="modalPsc" class="font-medium text-slate-800 font-mono">--</span>
+          </div>
+          <div>
+            <span class="text-slate-500 block">Place of Performance:</span>
+            <span id="modalPop" class="font-medium text-slate-800">--</span>
+          </div>
+          <div>
+            <span class="text-slate-500 block">Solicitation Type:</span>
+            <span id="modalType" class="font-medium text-slate-800">--</span>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="px-5 py-3 bg-slate-100 border-t border-slate-200 flex items-center justify-between">
+        <button id="modalFavToggleBtn" onclick="toggleCurrentModalFavorite()" class="flex items-center space-x-1.5 text-xs font-semibold px-3 py-2 bg-white hover:bg-slate-50 text-slate-700 rounded-lg border border-slate-300 transition">
+          <i data-lucide="star" id="modalFavIcon" class="w-4 h-4 text-slate-400"></i>
+          <span id="modalFavLabel">Bookmark</span>
+        </button>
+        <button onclick="closeScorecardModal()" class="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-lg transition">
+          Close
+        </button>
+      </div>
+
+    </div>
+  </dialog>
+
+  <!-- SKILL SETS CONFIGURATION MODAL -->
+  <dialog id="skillsModal" class="m-auto w-full max-w-2xl bg-white rounded-2xl shadow-2xl p-0 overflow-hidden border border-slate-200">
+    <div class="flex flex-col max-h-[90vh]">
+      
+      <div class="px-5 py-4 bg-slate-900 text-white flex items-center justify-between border-b border-slate-800">
+        <div class="flex items-center space-x-2">
+          <div class="p-1.5 rounded-lg bg-indigo-600 text-white">
+            <i data-lucide="cpu" class="w-4 h-4"></i>
+          </div>
+          <div>
+            <h2 class="text-sm md:text-base font-bold">Skill Sets Configuration File</h2>
+            <p class="text-xs text-slate-400">Parameters for calculating executable work likelihood</p>
+          </div>
+        </div>
+        <button onclick="closeSkillsModal()" class="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="p-5 overflow-y-auto space-y-4 text-xs">
+        <div class="p-3 bg-indigo-50 border border-indigo-200 rounded-xl text-indigo-950">
+          <p class="font-semibold mb-0.5">Configured Default Skill Sets:</p>
+          <p><strong>1. Technology & Cloud Infrastructure</strong> (Weight: 25%)</p>
+          <p><strong>2. Data Analysis & AI/ML</strong> (Weight: 35%)</p>
+          <p><strong>3. Software Development</strong> (Weight: 40%)</p>
+          <p class="text-[11px] text-indigo-700 mt-1">Stored in <code class="font-mono bg-indigo-100 px-1 py-0.5 rounded">data/skills.json</code>. You can customize weights, categories, and keywords below.</p>
+        </div>
+
+        <div>
+          <label class="block font-bold text-slate-800 mb-1">Configuration Editor (JSON)</label>
+          <textarea id="skillsJsonEditor" rows="14" class="w-full font-mono text-xs p-3 bg-slate-900 text-emerald-400 rounded-xl border border-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
+          <p id="skillsJsonError" class="hidden text-rose-600 text-xs mt-1 font-semibold"></p>
+        </div>
+      </div>
+
+      <div class="px-5 py-3 bg-slate-100 border-t border-slate-200 flex items-center justify-between">
+        <button onclick="resetSkillsToDefault()" class="px-3 py-2 bg-white hover:bg-slate-50 text-slate-700 rounded-lg border border-slate-300 text-xs font-medium transition">
+          Reset to Defaults
+        </button>
+        <div class="flex items-center space-x-2">
+          <button onclick="closeSkillsModal()" class="px-3 py-2 text-slate-600 text-xs font-semibold hover:bg-slate-200 rounded-lg transition">
+            Cancel
+          </button>
+          <button onclick="saveSkillsConfig()" id="btnSaveSkills" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg shadow-sm transition">
+            Save & Recalculate
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </dialog>
+
+  <!-- SETTINGS MODAL (SAM.gov API Key & Automation) -->
+  <dialog id="settingsModal" class="m-auto w-full max-w-lg bg-white rounded-2xl shadow-2xl p-0 overflow-hidden border border-slate-200">
+    <div class="flex flex-col">
+      
+      <div class="px-5 py-4 bg-slate-900 text-white flex items-center justify-between border-b border-slate-800">
+        <div class="flex items-center space-x-2">
+          <div class="p-1.5 rounded-lg bg-blue-600 text-white">
+            <i data-lucide="settings" class="w-4 h-4"></i>
+          </div>
+          <div>
+            <h2 class="text-sm md:text-base font-bold">Settings & SAM.gov API</h2>
+            <p class="text-xs text-slate-400">Configure credentials and scheduler parameters</p>
+          </div>
+        </div>
+        <button onclick="closeSettingsModal()" class="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="p-5 space-y-4 text-xs text-slate-700">
+        
+        <!-- API Key Status Banner -->
+        <div id="apiKeyStatusBanner" class="p-3 rounded-xl border flex items-start space-x-2.5">
+          <i data-lucide="info" class="w-4 h-4 mt-0.5 flex-shrink-0"></i>
+          <div>
+            <p id="apiKeyStatusTitle" class="font-bold">SAM.gov API Status</p>
+            <p id="apiKeyStatusDesc" class="text-slate-500 mt-0.5">Checking...</p>
+          </div>
+        </div>
+
+        <div>
+          <label class="block font-bold text-slate-800 mb-1">SAM.gov API Key</label>
+          <input type="password" id="settingsApiKeyInput" placeholder="Enter your SAM.gov or api.data.gov API key..."
+            class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg text-slate-800 font-mono focus:outline-none focus:ring-2 focus:ring-blue-500">
+          <p class="text-[11px] text-slate-500 mt-1">
+            Need a key? Get a free official API key at 
+            <a href="https://api.data.gov/signup/" target="_blank" class="text-blue-600 underline">api.data.gov/signup/</a> or 
+            <a href="https://sam.gov/" target="_blank" class="text-blue-600 underline">SAM.gov</a>.
+          </p>
+        </div>
+
+        <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-1">
+          <div class="flex justify-between">
+            <span class="text-slate-500">Automation Schedule:</span>
+            <span class="font-bold text-slate-800">Every day at 5:00 PM EST</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-slate-500">Timezone:</span>
+            <span class="font-medium text-slate-800">America/New_York (EST)</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-slate-500">Database:</span>
+            <span class="font-medium text-slate-800">SQLite (data/contracts.db)</span>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="px-5 py-3 bg-slate-100 border-t border-slate-200 flex items-center justify-end space-x-2">
+        <button onclick="closeSettingsModal()" class="px-3 py-2 text-slate-600 text-xs font-semibold hover:bg-slate-200 rounded-lg transition">
+          Close
+        </button>
+        <button onclick="saveApiKey()" id="btnSaveApiKey" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg shadow-sm transition">
+          Save API Key
+        </button>
+      </div>
+
+    </div>
+  </dialog>
+
+  <!-- TOAST NOTIFICATION CONTAINER -->
+  <div id="toastContainer" class="fixed top-4 right-4 z-50 flex flex-col space-y-2 pointer-events-none"></div>
+
+  <!-- Application Logic -->
+  <script src="/static/app.js"></script>
+</body>
+</html>
